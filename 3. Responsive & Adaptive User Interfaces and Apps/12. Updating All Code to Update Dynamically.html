@@ -1,0 +1,109 @@
+<p>In the video lectures, I&nbsp;didn't change all the code to take advantage of <code>addEventListener</code> on <code>Dimensions</code> (simply to avoid unnecessary repetition).</p><p>In case you're interested, here's how you would change the code to always update your styles when the <code>Dimensions</code> change.</p><p><strong>StartGameScreen.js</strong></p><p>No changes required, all styles do update when <code>Dimensions</code> change.</p><p><strong>GameScreen.js</strong></p><p>The <code>buttonContainer</code> style uses <code>Dimensions...height</code> to change <code>marginTop</code>.</p><pre class="prettyprint linenums">buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: Dimensions.get('window').height &gt; 600 ? 20 : 5,
+    width: 400,
+    maxWidth: '90%'
+  },</pre><p>Change this to:</p><pre class="prettyprint linenums">buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: 400,
+    maxWidth: '90%'
+  },</pre><p>and in your component function, use inline styles to update <code>marginTop</code> on the <code>&lt;Card&gt;</code> where you use <code>styles.buttonContainer</code>:</p><pre class="prettyprint linenums">&lt;Card style={&zwnj;{...styles.buttonContainer, {marginTop:&nbsp;availableHeight &gt; 600 ? 20 : 5}}}&gt;
+    ...
+&lt;/Card&gt;</pre><p><code>availableHeight</code> is already some state we're managing, so you don't need to add this.</p><p><strong><em>Side-note</em></strong>, totally unrelated to the Dimensions-listener thing: You could generally shorten the component code a little bit by only changing the NumberContainer + Button-Container part of your JSX code.</p><p>Like this:</p><pre class="prettyprint linenums">let gameControls =&nbsp;(
+    &lt;React.Fragment&gt;
+        &lt;NumberContainer&gt;{currentGuess}&lt;/NumberContainer&gt;
+        &lt;Card style={styles.buttonContainer}&gt;
+            &lt;MainButton onPress={nextGuessHandler.bind(this, 'lower')}&gt;
+                &lt;Ionicons name="md-remove" size={24} color="white" /&gt;
+            &lt;/MainButton&gt;
+            &lt;MainButton onPress={nextGuessHandler.bind(this, 'greater')}&gt;
+                &lt;Ionicons name="md-add" size={24} color="white" /&gt;
+            &lt;/MainButton&gt;
+        &lt;/Card&gt;
+    &lt;/React.Fragment&gt;
+);
+
+if (availableDeviceHeight &lt; 500) {
+    gameControls =&nbsp; (
+        &lt;View style={styles.controls}&gt;
+            &lt;MainButton onPress={nextGuessHandler.bind(this, 'lower')}&gt;
+                &lt;Ionicons name="md-remove" size={24} color="white" /&gt;
+            &lt;/MainButton&gt;
+            &lt;NumberContainer&gt;{currentGuess}&lt;/NumberContainer&gt;
+            &lt;MainButton onPress={nextGuessHandler.bind(this, 'greater')}&gt;
+                &lt;Ionicons name="md-add" size={24} color="white" /&gt;
+            &lt;/MainButton&gt;
+        &lt;/View&gt;
+    );
+}
+
+return (
+    &lt;View style={styles.screen}&gt;
+      &lt;Text style={DefaultStyles.title}&gt;Opponent's Guess&lt;/Text&gt;
+      {gameControls}
+      &lt;View style={listContainerStyle}&gt;
+        {/* &lt;ScrollView contentContainerStyle={styles.list}&gt;
+          {pastGuesses.map((guess, index) =&gt; renderListItem(guess, pastGuesses.length - index))}
+        &lt;/ScrollView&gt; */}
+        &lt;FlatList
+          keyExtractor={item =&gt; item}
+          data={pastGuesses}
+          renderItem={renderListItem.bind(this, pastGuesses.length)}
+          contentContainerStyle={styles.list}
+        /&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+);</pre><p>This introduces a new <code>gameControls</code> variable that manages the part of the JSX&nbsp;code that does actually change. Using this code instead of the one shown in the video lectures is totally optional though!</p><p><strong>GameOverScreen.js</strong></p><p>This file doesn't use any listener, hence you need to add <code>useState</code> and <code>useEffect</code>.</p><pre class="prettyprint linenums">import React, { useState, useEffect } from 'react;
+... // other imports
+
+const GameOverScreen = props =&gt; {
+    const [availableDeviceWidth, setAvailableDeviceWidth]&nbsp;=&nbsp;useState(Dimensions.get('window').width);
+    const [availableDeviceHeight, setAvailableDeviceHeight]&nbsp;=&nbsp;useState(Dimensions.get('window').height);
+
+    useEffect(()&nbsp;=&gt;&nbsp;{
+        const updateLayout = () =&gt; {
+            setAvailableDeviceWidth(Dimensions.get('window').width);
+            setAvailableDeviceHeight(Dimensions.get('window').height);
+    };
+
+    Dimensions.addEventListener('change', updateLayout);
+
+    return () =&gt; {
+            Dimensions.removeEventListener('change', updateLayout);
+        };
+    });
+
+    return (
+        &lt;ScrollView&gt;
+            &lt;View style={styles.screen}&gt;
+                &lt;TitleText&gt;The Game is Over!&lt;/TitleText&gt;
+                &lt;View style={&zwnj;{...styles.imageContainer, ...{
+                    width: availableDeviceWidth * 0.7,
+                    height: availableDeviceWidth * 0.7,
+                    borderRadius: (availableDeviceWidth * 0.7) / 2,
+                    marginVertical: availableDeviceHeight / 30
+                }}}&gt;
+                    &lt;Image
+                        source={require('../assets/success.png')}
+                        style={styles.image}
+                        resizeMode="cover"
+                    /&gt;
+                &lt;/View&gt;
+                &lt;View style={&zwnj;{...styles.resultContainer, 
+                        ...{marginVertical: availableDeviceHeight / 60}}}&gt;
+                    &lt;BodyText style={&zwnj;{...styles.resultText, ...{
+                            fontSize: availableDeviceHeight &lt; 400 ? 16 : 20}}}&gt;
+                        Your phone needed{' '}
+                        &lt;Text style={styles.highlight}&gt;{props.roundsNumber}&lt;/Text&gt; rounds to
+                            guess the number{' '}
+                        &lt;Text style={styles.highlight}&gt;{props.userNumber}&lt;/Text&gt;.
+                    &lt;/BodyText&gt;
+                &lt;/View&gt;
+                &lt;MainButton onPress={props.onRestart}&gt;NEW GAME&lt;/MainButton&gt;
+            &lt;/View&gt;
+        &lt;/ScrollView&gt;
+    );
+};
+//&nbsp;...</pre><p>Also remove the styles you're now setting as inline styles from the <code>StyleSheet</code> at the bottom of the file.</p><p><br></p>
