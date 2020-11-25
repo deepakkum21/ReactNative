@@ -182,3 +182,181 @@ There are two pieces to this:
                     </>
                 );
             }
+
+# Configuring the header bar
+
+## Setting the header title
+
+            function StackScreen() {
+                return (
+                    <Stack.Navigator>
+                    <Stack.Screen
+                        name="Home"
+                        component={HomeScreen}
+                        options={{ title: 'My home' }}
+                    />
+                    </Stack.Navigator>
+                );
+            }
+
+## Using params in the title
+
+1.  In order to use params in the title, we need to make options prop for the screen a function that returns a configuration object. It might be tempting to try to use this.props inside of options, but because it is defined before the component is rendered, this does not refer to an instance of the component and therefore no props are available. Instead, if we make options a function then React Navigation will call it with an object containing `{ navigation, route }` - in this case, all we care about is route, which is the same object that is passed to your screen props as route prop. You may recall that we can get the params through route.params, and so we do this below to extract a param and use it as a title.
+
+            import * as React from 'react';
+            import { View, Text, Button } from 'react-native';
+            import { NavigationContainer } from '@react-navigation/native';
+            import { createStackNavigator } from '@react-navigation/stack';
+
+            function HomeScreen({ navigation }) {
+                return (
+                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text>Home Screen</Text>
+                    <Button
+                        title="Go to Profile"
+                        onPress={() =>
+                        navigation.navigate('Profile', { name: 'Custom profile header' })
+                        }
+                    />
+                    </View>
+                );
+            }
+
+            function ProfileScreen({ navigation }) {
+                return (
+                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text>Profile screen</Text>
+                    <Button title="Go back" onPress={() => navigation.goBack()} />
+                    </View>
+                );
+            }
+
+            const Stack = createStackNavigator();
+
+            function App() {
+                return (
+                    <NavigationContainer>
+                        <Stack.Navigator>
+                            <Stack.Screen
+                            name="Home"
+                            component={HomeScreen}
+                            options={{ title: 'My home' }}
+                            />
+                            <Stack.Screen
+                            name="Profile"
+                            component={ProfileScreen}
+                            options={({ route }) => ({ title: route.params.name })}
+                            />
+                        </Stack.Navigator>
+                    </NavigationContainer>
+                );
+            }
+
+            export default App;
+
+2.  The argument that is passed in to the options function is an object with the following properties:
+
+    - `navigation` - The navigation prop for the screen.
+    - `route` - The route prop for the screen
+
+## Updating options with setOptions#
+
+1.  It's `often necessary to update the options configuration for the active screen` from the mounted screen component itself.
+
+    - We can do this using `navigation.setOptions`
+
+            <Button
+                title="Update the title"
+                onPress={() => navigation.setOptions({ title: 'Updated!' })}
+            />
+
+## Adjusting header styles
+
+- There are three key properties to use when customizing the style of your header: `headerStyle, headerTintColor, and headerTitleStyle`.
+
+1.  **headerStyle**: a style object that will be `applied to the View that wraps the header`. If you `set backgroundColor` on it, that will be the color of your header.
+2.  **headerTintColor**: the `back button and title both use this property as their color`. In the example below, we set the tint color to white (#fff) so the back button and the header title would be white.
+3.  **headerTitleStyle**: if we want to` customize the fontFamily, fontWeight and other Text style properties` for the title, we can use this to do it.
+
+                function StackScreen() {
+                    return (
+                        <Stack.Navigator>
+                        <Stack.Screen
+                            name="Home"
+                            component={HomeScreen}
+                            options={{
+                            title: 'My home',
+                            headerStyle: {
+                                backgroundColor: '#f4511e',
+                            },
+                            headerTintColor: '#fff',
+                            headerTitleStyle: {
+                                fontWeight: 'bold',
+                            },
+                            }}
+                        />
+                        </Stack.Navigator>
+                    );
+                }
+
+## Sharing common options across screens
+
+- It is common to want to configure the header in a similar way across many screens.
+
+                function App() {
+                    return (
+                        <NavigationContainer>
+                        <Stack.Navigator
+                            screenOptions={{
+                            headerStyle: {
+                                backgroundColor: '#f4511e',
+                            },
+                            headerTintColor: '#fff',
+                            }}
+                        >
+                            <Stack.Screen
+                            name="Home"
+                            component={HomeScreen}
+                            options={{ title: 'My home' }}
+                            />
+                        </Stack.Navigator>
+                        </NavigationContainer>
+                    );
+                }
+
+## Replacing the title with a custom component
+
+- Sometimes you need more control than just changing the text and styles of your title -- for example, you may want to render an image in place of the title, or make the title into a button. In these cases you can completely override the component used for the title and provide your own.
+
+                function HomeScreen() {
+                    return (
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text>Home Screen</Text>
+                        </View>
+                    );
+                }
+
+                function LogoTitle() {
+                    return (
+                        <Image
+                        style={{ width: 50, height: 50 }}
+                        source={require('@expo/snack-static/react-native-logo.png')}
+                        />
+                    );
+                }
+
+                const Stack = createStackNavigator();
+
+                function App() {
+                    return (
+                        <NavigationContainer>
+                        <Stack.Navigator>
+                            <Stack.Screen
+                            name="Home"
+                            component={HomeScreen}
+                            options={{ headerTitle: props => <LogoTitle {...props} /> }}
+                            />
+                        </Stack.Navigator>
+                        </NavigationContainer>
+                    );
+                }
